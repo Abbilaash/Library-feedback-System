@@ -7,6 +7,7 @@ function LibraryFeedbackForm() {
   const [otherInputs, setOtherInputs] = useState({});
   const [startTime, setStartTime] = useState(null);
   const [loading, setLoading] = useState(true); // Set loading to true initially
+  const [submitting, setSubmitting] = useState(false); // New state for submission loading
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -36,6 +37,8 @@ function LibraryFeedbackForm() {
   };
 
   const handleSubmit = async () => {
+    setSubmitting(true); // Start loading
+
     const feedbackData = questions.map((question) => ({
       question: question.question,
       answer: question.id === 'additional' ? otherInputs[question.id] : (answers[question.id] === 'Other' ? otherInputs[question.id] : answers[question.id]),
@@ -51,11 +54,17 @@ function LibraryFeedbackForm() {
       alert('Feedback submitted successfully!');
     } catch (error) {
       console.error('Error submitting feedback:', error);
+    } finally {
+      setSubmitting(false); // End loading
     }
   };
 
   if (loading) {
     return <div>Loading...</div>; // Optional loading state
+  }
+
+  if (submitting) {
+    return <div>Submitting your feedback, please wait...</div>; // Loading state during submission
   }
 
   return (

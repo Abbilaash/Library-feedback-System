@@ -349,6 +349,31 @@ def get_issue_counts():
         "pending": pending_issues
     }), 200
 
+@admin_bp.route("/get_issue_categories", methods=["GET"])
+def get_issue_categories():
+    # Aggregate issues by category
+    category_counts = issues_collection.aggregate([
+        {
+            "$group": {
+                "_id": "$category",  # Assuming 'category' is the field name for categories
+                "count": {"$sum": 1}
+            }
+        },
+        {
+            "$match": {
+                "count": {"$gt": 0}  # Only include categories with a count greater than 0
+            }
+        }
+    ])
+
+    # Prepare the response
+    category_data = {str(category["_id"]): category["count"] for category in category_counts}
+    return jsonify(category_data), 200
+
+
+
+
+
 
 
 

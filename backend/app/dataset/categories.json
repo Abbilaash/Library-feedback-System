@@ -1,0 +1,97 @@
+{
+    "categories": [
+        {
+            "name": "Building Infrastructure",
+            "keywords": [
+                "chair", "table", "light", "building", "space", "floor", 
+                "shelf", "wall", "window", "door", "electrical", "plumbing",
+                "toilet", "restroom", "elevator", "stair", "ramp", "ventilation",
+                "noise", "temperature", "ac", "heating", "cooling", "disability"
+            ],
+            "description": "Physical building facilities and accessibility"
+        },
+        {
+            "name": "Print/Physical Resources",
+            "keywords": [
+                "book", "journal", "material", "textbook", "novel", "reference",
+                "periodical", "magazine", "newspaper", "thesis", "dissertation",
+                "archive", "map", "rare book", "collection", "missing", "damaged",
+                "outdated", "unavailable", "reserve"
+            ],
+            "description": "Physical books and printed materials"
+        },
+        {
+            "name": "Digital Resources",
+            "keywords": [
+                "ebook", "database", "online", "electronic", "ejournal", "digital",
+                "platform", "website", "portal", "access", "login", "subscription",
+                "proquest", "jstor", "ieee", "sciencedirect", "vpn", "remote",
+                "streaming", "multimedia", "video", "audio"
+            ],
+            "description": "Electronic resources and access platforms"
+        },
+        {
+            "name": "Technology Equipment",
+            "keywords": [
+                "wifi", "internet", "computer", "pc", "printer", "scanner",
+                "network", "speed", "connection", "cable", "charger", "outlet",
+                "projector", "screen", "software", "hardware", "mouse", "keyboard",
+                "headphone", "microphone", "cctv", "security", "kiosk"
+            ],
+            "description": "IT infrastructure and equipment"
+        },
+        {
+            "name": "Staff Services",
+            "keywords": [
+                "staff", "librarian", "rude", "unhelpful", "behavior", "attitude",
+                "knowledge", "training", "assistance", "support", "help", "service",
+                "delay", "wait", "professional", "unavailable", "absent", "guidance",
+                "reference", "consultation", "expertise"
+            ],
+            "description": "Staff-related services and interactions"
+        },
+        {
+            "name": "Self-Service Systems",
+            "keywords": [
+                "self-issue", "self check", "auto issue", "kiosk", "self service",
+                "self-return", "return kiosk", "drop box", "auto return", "rfid",
+                "barcode", "machine", "automated", "facial", "biometric", "card",
+                "app", "mobile", "touchscreen", "interface", "unresponsive"
+            ],
+            "description": "Automated borrowing/return systems"
+        },
+        {
+            "name": "Policies & Administration",
+            "keywords": [
+                "policy", "rule", "regulation", "fine", "fee", "charge", "cost",
+                "membership", "timing", "hour", "schedule", "holiday", "closed",
+                "access", "restriction", "quota", "limit", "ban", "allowed",
+                "procedure", "document", "form", "application"
+            ],
+            "description": "Library rules and administrative policies"
+        },
+        {
+            "name": "Study Facilities",
+            "keywords": [
+                "study", "carrel", "desk", "room", "quiet", "silent", "group",
+                "discussion", "cubicle", "booth", "seat", "reservation", "noisy",
+                "disturbance", "concentration", "environment", "atmosphere"
+            ],
+            "description": "Study spaces and environments"
+        },
+        {
+            "name": "Special Services",
+            "keywords": [
+                "interlibrary", "loan", "delivery", "scan", "copy", "print",
+                "bind", "thesis", "workshop", "training", "event", "program",
+                "literacy", "research", "support", "reference", "consultation",
+                "accessibility", "disability", "child", "senior"
+            ],
+            "description": "Specialized library services"
+        }
+    ],
+    "misc_category": {
+        "name": "Other Issues",
+        "description": "Uncategorized feedback"
+    }
+}

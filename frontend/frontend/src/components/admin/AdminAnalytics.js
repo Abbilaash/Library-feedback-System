@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminNavbar from './AdminNavbar'; // Import the AdminNavbar
 import { FaEllipsisV } from 'react-icons/fa'; // Import the dropdown icon
+import { Pie } from 'react-chartjs-2'; // Import Pie chart
 
 function AdminAnalytics() {
   const [issues, setIssues] = useState([]);
   const [issueCounts, setIssueCounts] = useState({ total: 0, resolved: 0, pending: 0 });
+  const [categoryData, setCategoryData] = useState({}); // State for category data
   const [dropdownOpen, setDropdownOpen] = useState(null); // State to manage dropdown visibility
   const [hoveredBox, setHoveredBox] = useState(null); // State to manage hovered count box
 
@@ -28,8 +30,18 @@ function AdminAnalytics() {
       }
     };
 
+    const fetchCategoryData = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/admin/get_issue_categories');
+        setCategoryData(response.data);
+      } catch (error) {
+        console.error('Error fetching category data:', error);
+      }
+    };
+
     fetchIssues();
     fetchIssueCounts();
+    fetchCategoryData();
   }, []);
 
   const handleStatusChange = async (issue, newStatus) => {
@@ -45,6 +57,30 @@ function AdminAnalytics() {
 
   const toggleDropdown = (index) => {
     setDropdownOpen(dropdownOpen === index ? null : index); // Toggle dropdown visibility
+  };
+
+  // Prepare data for the pie chart
+  const totalIssues = Object.values(categoryData).reduce((acc, count) => acc + count, 0); // Calculate total issues
+
+  const pieChartData = {
+    labels: Object.keys(categoryData).map(category => {
+      const count = categoryData[category];
+      const percentage = ((count / totalIssues) * 100).toFixed(1); // Calculate percentage
+      return `${category} (${percentage}%)`; // Format label with percentage
+    }),
+    datasets: [
+      {
+        data: Object.values(categoryData),
+        backgroundColor: [
+          '#FF6384',
+          '#36A2EB',
+          '#FFCE56',
+          '#4BC0C0',
+          '#9966FF',
+          '#FF9F40',
+        ],
+      },
+    ],
   };
 
   return (
@@ -78,6 +114,12 @@ function AdminAnalytics() {
           <h3 style={styles.countTitle}>Pending Issues</h3>
           <p style={styles.countValue}>{issueCounts.pending}</p>
         </div>
+      </div>
+
+      {/* Pie Chart Section */}
+      <div style={{ margin: '20px 0', maxWidth: '400px', margin: '0 auto' }}>
+        <h3>Issue Categories Distribution</h3>
+        <Pie data={pieChartData} width={400} height={400} />
       </div>
 
       {issues.length === 0 ? (

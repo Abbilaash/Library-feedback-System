@@ -8,6 +8,10 @@ import smtplib
 from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import json
+import re
+from pathlib import Path
+from collections import defaultdict
 
 load_dotenv()
 
@@ -206,5 +210,36 @@ def send_tks_mail(receiver_email, user_name):
         server.login(os.getenv("GMAIL_ID"), os.getenv("GMAIL_PASSWORD"))
         server.sendmail(os.getenv("GMAIL_ID"), receiver_email, msg.as_string())
 
+def classify_issues(issue, config_file="dataset/categories.json"):
+    """
+    Classifies a single issue string into one or more categories based on keywords.
+    Returns the best-matched category or 'Other Issues'.
+    """
+    # Load category configuration
+    try:
+        with open(config_file) as f:
+            config = json.load(f)
+        categories = config["categories"]
+        misc_cat = config["misc_category"]
+    except Exception as e:
+        raise ValueError(f"Error loading {config_file}: {str(e)}")
+
+    # Prepare category match dictionary
+    match_scores = defaultdict(int)
+    issue_lower = issue.lower()
+
+    for cat in categories:
+        for kw in cat["keywords"]:
+            if kw.lower() in issue_lower:
+                match_scores[cat["name"]] += 1
+
+    if not match_scores:
+        return misc_cat["name"]
+
+    # Select the category with the highest match count
+    best_category = max(match_scores.items(), key=lambda x: x[1])[0]
+    return best_category
+
+print(classify_issues("there is no AC"))
 
 

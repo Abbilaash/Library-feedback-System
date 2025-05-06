@@ -113,6 +113,8 @@ def submit_feedback():
         user_score, priority = 1.0, 'high'
     label, confidence = pipeline.classify_feedback(feedback_data[-1]['answer'])
 
+    # TODO: classify the issue
+
 
     # Convert start_time from seconds to a datetime object
     start_time = datetime.utcfromtimestamp(start_time)
@@ -125,6 +127,7 @@ def submit_feedback():
     issue_presence = False
     if label == 'ISSUE':
         issue_presence = True
+        category = pipeline.classify_issues(feedback_data[-1]['answer'])
         issue_entry = {
             "_id": ObjectId(),  # Automatically generate a unique ObjectId
             "raised_by": email,
@@ -132,6 +135,7 @@ def submit_feedback():
             "user_score": user_score,
             "issue": feedback_data[-1]['answer'],
             "status": "PENDING",
+            "category":category,
             "resolved_date": ""
         }
         issues_collection.insert_one(issue_entry)
