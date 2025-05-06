@@ -1,0 +1,35 @@
+- submissions (Admin)
+    - display all the latest submissions
+    - add a set of search options like search with feedback_id, roll_no, issues, date (from, to), conclusions
+
+- dashboard page
+
+- AASA pipeline (pipeline.py)
+    - feedbacks from staff should be taken directly. Only student feedback should pass through the pipeline
+    - data cleaning and study
+        - protocols setup
+            - time engagement ratio with questions (total_time_taken/number_of_questions)
+                - <3 seconds - red flag (5 seconds -> good engagement)
+            - entiment polarity score (range -1 to 1)
+                - <-0.3 -> negative feedback | -0.3<X<0.3 -> neutral | >0.3 -> positive feedback
+    - setup preprocessing layer
+
+- Analytics page
+    - feedback submission trend
+    - common issues (open seperate collection for this)
+    - feedback submitted with score (feedback_id, roll_no, feedback, score, AI conclusion)
+    - issue votes (if same issue quoted by many - plot a pie chart for issues)
+
+- Reports
+    - select date range for generating Reports
+        - set download options
+            - structure output data accordingly
+        - select a general .pdf template for generating Reports
+            - month wise issues
+            - issue status
+            - feedback count
+
+
+- create the log system to log every single move in frontend and backend
+
+
