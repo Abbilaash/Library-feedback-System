@@ -240,6 +240,206 @@ def classify_issues(issue, config_file="dataset/categories.json"):
     best_category = max(match_scores.items(), key=lambda x: x[1])[0]
     return best_category
 
-print(classify_issues("there is no AC"))
+def get_suspend_email_template(user_name="User"):
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Issue Suspended</title>
+      <style>
+        body {{
+          background-color: #f4f6f8;
+          margin: 0;
+          padding: 0;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }}
+        .container {{
+          max-width: 600px;
+          margin: 30px auto;
+          background-color: #ffffff;
+          border-radius: 10px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.05);
+          padding: 30px;
+          text-align: center;
+        }}
+        .header {{
+          background-color: #ffcc00;
+          padding: 20px;
+          border-radius: 10px 10px 0 0;
+          color: black;
+          font-size: 24px;
+          font-weight: bold;
+        }}
+        .content {{
+          padding: 20px;
+          font-size: 16px;
+          color: #333;
+        }}
+        .footer {{
+          margin-top: 30px;
+          font-size: 14px;
+          color: #aaa;
+        }}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Issue Suspended</div>
+        <div class="content">
+          <p>Dear {user_name},</p>
+          <p>Your issue has been suspended. Please check back later for updates.</p>
+        </div>
+        <div class="footer">
+          &copy; {datetime.now().year} GRD Library. All rights reserved.
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+
+def get_resolved_email_template(user_name="User"):
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Issue Resolved</title>
+      <style>
+        body {{
+          background-color: #f4f6f8;
+          margin: 0;
+          padding: 0;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }}
+        .container {{
+          max-width: 600px;
+          margin: 30px auto;
+          background-color: #ffffff;
+          border-radius: 10px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.05);
+          padding: 30px;
+          text-align: center;
+        }}
+        .header {{
+          background-color: #28a745;
+          padding: 20px;
+          border-radius: 10px 10px 0 0;
+          color: white;
+          font-size: 24px;
+          font-weight: bold;
+        }}
+        .content {{
+          padding: 20px;
+          font-size: 16px;
+          color: #333;
+        }}
+        .footer {{
+          margin-top: 30px;
+          font-size: 14px;
+          color: #aaa;
+        }}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Issue Resolved</div>
+        <div class="content">
+          <p>Dear {user_name},</p>
+          <p>Your issue has been successfully resolved. Thank you for your patience!</p>
+        </div>
+        <div class="footer">
+          &copy; {datetime.now().year} GRD Library. All rights reserved.
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+
+def get_pending_email_template(user_name="User"):
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Issue Pending</title>
+      <style>
+        body {{
+          background-color: #f4f6f8;
+          margin: 0;
+          padding: 0;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }}
+        .container {{
+          max-width: 600px;
+          margin: 30px auto;
+          background-color: #ffffff;
+          border-radius: 10px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.05);
+          padding: 30px;
+          text-align: center;
+        }}
+        .header {{
+          background-color: #ffc107;
+          padding: 20px;
+          border-radius: 10px 10px 0 0;
+          color: black;
+          font-size: 24px;
+          font-weight: bold;
+        }}
+        .content {{
+          padding: 20px;
+          font-size: 16px;
+          color: #333;
+        }}
+        .footer {{
+          margin-top: 30px;
+          font-size: 14px;
+          color: #aaa;
+        }}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Issue Pending</div>
+        <div class="content">
+          <p>Dear {user_name},</p>
+          <p>Your issue is currently pending. We will update you as soon as possible.</p>
+        </div>
+        <div class="footer">
+          &copy; {datetime.now().year} GRD Library. All rights reserved.
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+
+
+def issue_close_mail(task, receiver_email, user_name):
+    msg = MIMEMultipart("alternative")
+    msg['From'] = os.getenv("GMAIL_ID")
+    msg['To'] = receiver_email
+
+    if task == "RESOLVED":
+        msg['Subject'] = "Your Issue Has Been Resolved"
+        html_content = get_resolved_email_template(user_name)
+    elif task == "SUSPENDED":
+        msg['Subject'] = "Your Issue Has Been Suspended"
+        html_content = get_suspend_email_template(user_name)
+    elif task == "PENDING":
+        msg['Subject'] = "Your Issue Is Pending"
+        html_content = get_pending_email_template(user_name)
+    else:
+        return  # Invalid task
+
+    mime_html = MIMEText(html_content, "html")
+    msg.attach(mime_html)
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(os.getenv("GMAIL_ID"), os.getenv("GMAIL_PASSWORD"))
+        server.sendmail(os.getenv("GMAIL_ID"), receiver_email, msg.as_string())
+
+
 
 

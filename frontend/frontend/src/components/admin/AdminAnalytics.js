@@ -10,6 +10,10 @@ function AdminAnalytics() {
   const [categoryData, setCategoryData] = useState({}); // State for category data
   const [dropdownOpen, setDropdownOpen] = useState(null); // State to manage dropdown visibility
   const [hoveredBox, setHoveredBox] = useState(null); // State to manage hovered count box
+  const [statusFilter, setStatusFilter] = useState(''); // State for status filter
+  const [categoryFilter, setCategoryFilter] = useState(''); // State for category filter
+  const [searchQuery, setSearchQuery] = useState(''); // State for search query
+  const [categories, setCategories] = useState([]); // State for categories
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -34,6 +38,7 @@ function AdminAnalytics() {
       try {
         const response = await axios.get('http://localhost:5000/admin/get_issue_categories');
         setCategoryData(response.data);
+        setCategories(Object.keys(response.data)); // Set categories for the filter
       } catch (error) {
         console.error('Error fetching category data:', error);
       }
@@ -44,12 +49,35 @@ function AdminAnalytics() {
     fetchCategoryData();
   }, []);
 
+  const handleFilterChange = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/admin/filter_issues', {
+        params: {
+          status: statusFilter,
+          category: categoryFilter,
+          query: searchQuery,
+        },
+      });
+      setIssues(response.data);
+    } catch (error) {
+      console.error('Error filtering issues:', error);
+    }
+  };
+
   const handleStatusChange = async (issue, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/admin/update_issue/${issue._id}`, { status: newStatus });
-      // Update the local state
+      let endpoint = '';
+      if (newStatus === 'RESOLVED') {
+        endpoint = `resolve_issue/${issue._id}`;
+      } else if (newStatus === 'SUSPENDED') {
+        endpoint = `suspend_issue/${issue._id}`;
+      } else if (newStatus === 'PENDING') {
+        endpoint = `set_pending_issue/${issue._id}`;
+      }
+
+      await axios.put(`http://localhost:5000/admin/${endpoint}`);
       setIssues(prevIssues => prevIssues.map(i => (i._id === issue._id ? { ...i, status: newStatus } : i)));
-      setDropdownOpen(null); // Close the dropdown after status change
+      setDropdownOpen(null);
     } catch (error) {
       console.error('Error updating issue status:', error);
     }
@@ -88,6 +116,40 @@ function AdminAnalytics() {
       <AdminNavbar /> {/* Include the Admin Navbar */}
       <h2 style={styles.title}>Issues Raised</h2>
       
+      {/* Filters and Search Box */}
+      <div style={styles.filtersContainer}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={styles.filterSelect}
+        >
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="SUSPENDED">Suspended</option>
+          <option value="RESOLVED">Resolved</option>
+        </select>
+
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          style={styles.filterSelect}
+        >
+          <option value="">All Categories</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          placeholder="Search by Roll Number or Raised By"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={styles.searchInput}
+        />
+        <button onClick={handleFilterChange} style={styles.filterButton}>Search</button>
+      </div>
+
       {/* Issue Counts Section */}
       <div style={styles.countsContainer}>
         <div 
@@ -117,7 +179,7 @@ function AdminAnalytics() {
       </div>
 
       {/* Pie Chart Section */}
-      <div style={{ margin: '20px 0', maxWidth: '400px', margin: '0 auto' }}>
+      <div style={{ margin: '20px 0', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
         <h3>Issue Categories Distribution</h3>
         <Pie data={pieChartData} width={400} height={400} />
       </div>
@@ -154,30 +216,36 @@ function AdminAnalytics() {
                     </button>
                     {dropdownOpen === index && (
                       <div style={styles.dropdownContent}>
-                        <div
-                          style={styles.dropdownItem}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.dropdownItemHover.backgroundColor}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                          onClick={() => handleStatusChange(issue, 'resolved')}
-                        >
-                          Resolved
-                        </div>
-                        <div
-                          style={styles.dropdownItem}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.dropdownItemHover.backgroundColor}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                          onClick={() => handleStatusChange(issue, 'resolving')}
-                        >
-                          Resolving
-                        </div>
-                        <div
-                          style={styles.dropdownItem}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.dropdownItemHover.backgroundColor}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                          onClick={() => handleStatusChange(issue, 'suspend')}
-                        >
-                          Suspend
-                        </div>
+                        {issue.status !== 'RESOLVED' && (
+                          <div
+                            style={styles.dropdownItem}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.dropdownItemHover.backgroundColor}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                            onClick={() => handleStatusChange(issue, 'RESOLVED')}
+                          >
+                            Resolved
+                          </div>
+                        )}
+                        {issue.status !== 'RESOLVED' && (
+                          <div
+                            style={styles.dropdownItem}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.dropdownItemHover.backgroundColor}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                            onClick={() => handleStatusChange(issue, 'SUSPENDED')}
+                          >
+                            Suspend
+                          </div>
+                        )}
+                        {issue.status !== 'RESOLVED' && (
+                          <div
+                            style={styles.dropdownItem}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.dropdownItemHover.backgroundColor}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                            onClick={() => handleStatusChange(issue, 'PENDING')}
+                          >
+                            Pending
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -204,6 +272,32 @@ const styles = {
     color: '#333',
     marginBottom: '20px',
     textAlign: 'center', // Center the title
+  },
+  filtersContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: '20px',
+  },
+  filterSelect: {
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #ccc',
+    marginRight: '10px',
+    flex: '1',
+  },
+  searchInput: {
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #ccc',
+    flex: '2',
+  },
+  filterButton: {
+    padding: '10px 20px',
+    backgroundColor: '#4A90E2',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
   },
   countsContainer: {
     display: 'flex',
