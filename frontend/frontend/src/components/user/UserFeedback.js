@@ -6,19 +6,19 @@ function LibraryFeedbackForm() {
   const [answers, setAnswers] = useState({});
   const [otherInputs, setOtherInputs] = useState({});
   const [startTime, setStartTime] = useState(null);
-  const [loading, setLoading] = useState(true); // Set loading to true initially
-  const [submitting, setSubmitting] = useState(false); // New state for submission loading
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const response = await axios.get('http://localhost:5000/users/get_feedback_questions');
         setQuestions([...response.data, { id: 'additional', question: 'Do you want to include something?' }]);
-        setStartTime(new Date()); // Record the start time when questions are fetched
+        setStartTime(new Date());
       } catch (error) {
         console.error('Error fetching questions:', error);
       } finally {
-        setLoading(false); // Set loading to false after fetching
+        setLoading(false);
       }
     };
 
@@ -28,7 +28,7 @@ function LibraryFeedbackForm() {
   const handleOptionChange = (questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
     if (value === 'Other') {
-      setOtherInputs((prev) => ({ ...prev, [questionId]: '' })); // Reset other input when "Other" is selected
+      setOtherInputs((prev) => ({ ...prev, [questionId]: '' }));
     }
   };
 
@@ -37,14 +37,14 @@ function LibraryFeedbackForm() {
   };
 
   const handleSubmit = async () => {
-    setSubmitting(true); // Start loading
+    setSubmitting(true);
 
     const feedbackData = questions.map((question) => ({
       question: question.question,
       answer: question.id === 'additional' ? otherInputs[question.id] : (answers[question.id] === 'Other' ? otherInputs[question.id] : answers[question.id]),
     }));
 
-    const startTimeInSeconds = Math.floor(startTime.getTime() / 1000); // Convert to seconds
+    const startTimeInSeconds = Math.floor(startTime.getTime() / 1000);
 
     try {
       await axios.post('http://localhost:5000/users/submit_feedback', {
@@ -55,60 +55,69 @@ function LibraryFeedbackForm() {
     } catch (error) {
       console.error('Error submitting feedback:', error);
     } finally {
-      setSubmitting(false); // End loading
+      setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <div>Loading...</div>; // Optional loading state
-  }
-
-  if (submitting) {
-    return <div>Submitting your feedback, please wait...</div>; // Loading state during submission
+    return <div>Loading...</div>;
   }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>GRD Library Floor 3 Feedback</h2>
-      {questions.map((q, index) => (
-        <div key={q.id} style={styles.questionBlock}>
-          <p style={styles.question}>{`${index + 1}) ${q.question}`}</p>
-          {q.id === 'additional' && (
-            <input
-              type="text"
-              placeholder="Write your response (optional)"
-              value={otherInputs[q.id] || ''}
-              onChange={(e) => handleOtherInputChange(q.id, e.target.value)}
-              style={styles.blankLineInput}
-            />
-          )}
-          {q.options && q.options.map((opt, idx) => (
-            <label key={idx} style={styles.optionLabel}>
-              <input
-                type="radio"
-                name={q.id}
-                value={opt}
-                checked={answers[q.id] === opt}
-                onChange={() => handleOptionChange(q.id, opt)}
-              />
-              {opt}
-            </label>
-          ))}
-          <label style={styles.optionLabel}>
-            {answers[q.id] === 'Other' && (
+    <>
+      <div style={{ ...styles.container, filter: submitting ? 'blur(5px)' : 'none' }}>
+        <h2 style={styles.heading}>GRD Library Floor 3 Feedback</h2>
+        {questions.map((q, index) => (
+          <div key={q.id} style={styles.questionBlock}>
+            <p style={styles.question}>{`${index + 1}) ${q.question}`}</p>
+            {q.id === 'additional' && (
               <input
                 type="text"
-                placeholder="Write your response"
+                placeholder="Write your response (optional)"
                 value={otherInputs[q.id] || ''}
                 onChange={(e) => handleOtherInputChange(q.id, e.target.value)}
                 style={styles.blankLineInput}
               />
             )}
-          </label>
+            {q.options && q.options.map((opt, idx) => (
+              <label key={idx} style={styles.optionLabel}>
+                <input
+                  type="radio"
+                  name={q.id}
+                  value={opt}
+                  checked={answers[q.id] === opt}
+                  onChange={() => handleOptionChange(q.id, opt)}
+                />
+                {opt}
+              </label>
+            ))}
+            <label style={styles.optionLabel}>
+              {answers[q.id] === 'Other' && (
+                <input
+                  type="text"
+                  placeholder="Write your response"
+                  value={otherInputs[q.id] || ''}
+                  onChange={(e) => handleOtherInputChange(q.id, e.target.value)}
+                  style={styles.blankLineInput}
+                />
+              )}
+            </label>
+          </div>
+        ))}
+        <button onClick={handleSubmit} style={styles.submitButton}>Submit Feedback</button>
+      </div>
+
+      {/* Modal */}
+      {submitting && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={{ marginBottom: '15px' }}>Thank you for your feedback!</h3>
+            <div style={styles.spinner}></div>
+            <h3 style={{ marginBottom: '15px' }}>Please wait...<br />It may take few seconds...</h3>
+          </div>
         </div>
-      ))}
-      <button onClick={handleSubmit} style={styles.submitButton}>Submit Feedback</button>
-    </div>
+      )}
+    </>
   );
 }
 
@@ -121,6 +130,8 @@ const styles = {
     borderRadius: '12px',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
     fontFamily: 'Arial, sans-serif',
+    position: 'relative',
+    zIndex: 1,
   },
   heading: {
     textAlign: 'center',
@@ -165,6 +176,47 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.3s',
   },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    backdropFilter: 'blur(4px)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: '30px 40px',
+    borderRadius: '12px',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+    textAlign: 'center',
+    transform: 'scale(1.05)',
+    transition: 'transform 0.3s ease',
+  },
+  spinner: {
+    margin: '0 auto',
+    width: '40px',
+    height: '40px',
+    border: '5px solid #ccc',
+    borderTop: '5px solid #4A90E2',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+  },
 };
+
+// Add keyframe spinner animation manually to document
+const styleSheet = document.styleSheets[0];
+const keyframes =
+  `@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }`;
+
+styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
 
 export default LibraryFeedbackForm;

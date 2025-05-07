@@ -191,6 +191,7 @@ function AdminAnalytics() {
           <thead>
             <tr>
               <th style={styles.th}>Raised By</th>
+              <th style={styles.th}>User Score</th>
               <th style={styles.th}>Issue</th>
               <th style={styles.th}>Raise Date</th>
               <th style={styles.th}>Status</th>
@@ -201,6 +202,7 @@ function AdminAnalytics() {
             {issues.map((issue, index) => (
               <tr key={index}>
                 <td style={styles.td}>{issue.raised_by}</td>
+                <td style={styles.td}>{issue.user_score}/100</td>
                 <td style={styles.td}>{issue.issue}</td>
                 <td style={styles.td}>{new Date(issue.issue_raise_date).toLocaleString()}</td>
                 <td style={styles.td}>{issue.status}</td>

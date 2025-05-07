@@ -5,6 +5,7 @@ import datetime
 from flask_cors import CORS
 from bson import ObjectId
 import os
+import logging
 
 # importing database collections from app
 from database import users_collection
@@ -289,9 +290,8 @@ def get_feedback_submissions():
             "floor_no": feedback.get("floor_no"),
             "feedback_time_taken":feedback.get("feedback_time_taken"),
             "date": feedback.get("date"),
-            "issue_presence":feedback.get("issue_presence")
+            "issue_presence":str(feedback.get("issue_presence"))
         })
-    print(feedback_list)
 
     return jsonify(feedback_list), 200
 
@@ -342,10 +342,9 @@ def get_issues():
         "issue_raise_date": 1,
         "status": 1,
         "resolved_date":1,
-        "issue":1
+        "issue":1,
+        "user_score":1
     })
-
-    print(issues)
     
     issue_list = []
     for issue in issues:
@@ -355,8 +354,10 @@ def get_issues():
             "issue":issue.get("issue"),
             "issue_raise_date": issue.get("issue_raise_date"),
             "status": issue.get("status"),
-            "resolved_date":issue.get("resolved_date")
+            "resolved_date":issue.get("resolved_date"),
+            "user_score":issue.get("user_score")*100
         })
+        print(issue)
 
     return jsonify(issue_list), 200
 
@@ -405,7 +406,7 @@ def resolve_issue(issue_id):
 
     result = issues_collection.update_one(
         {"_id": ObjectId(issue_id)},
-        {"$set": {"status": "RESOLVED"}}
+        {"$set": {"status": "RESOLVED","resolved_date": datetime.datetime.utcnow()}}
     )
     if result.modified_count == 0:
         return jsonify({"error": "Issue not found or status not changed."}), 404
@@ -495,8 +496,13 @@ def filter_issues():
 
     return jsonify(issue_list), 200
 
-
-
+@admin_bp.route("/feedback_time_taken", methods=["GET"])
+def feedback_time_taken():
+    # Fetch the last 20 feedback submissions
+    feedbacks = feedback_collection.find({}, {"feedback_time_taken": 1}).sort("date", -1).limit(50)
+    time_taken_list = [feedback.get("feedback_time_taken", 0) for feedback in feedbacks]
+    
+    return jsonify(time_taken_list), 200
 
 
 

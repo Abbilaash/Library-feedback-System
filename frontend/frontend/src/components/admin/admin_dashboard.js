@@ -13,6 +13,7 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [feedbackData, setFeedbackData] = useState([]);
   const [loginData, setLoginData] = useState([]);
+  const [timeTakenData, setTimeTakenData] = useState([]); // New state for time taken data
   const [days, setDays] = useState(5); // Default to 5 days
   const [feedbackRate, setFeedbackRate] = useState(0);
   const [loginRate, setLoginRate] = useState(0);
@@ -64,12 +65,20 @@ function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (days >= 5) { // Only fetch if days is valid
-      fetchCounts(days);
-      fetchFeedbackRate(days); // Fetch feedback rate for the new number of days
-      fetchLoginRate(days); // Fetch login rate for the new number of days
+  const fetchTimeTaken = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/admin/feedback_time_taken`);
+      setTimeTakenData(response.data);
+    } catch (err) {
+      console.error('Failed to fetch time taken data:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchCounts(days);
+    fetchFeedbackRate(days); // Fetch feedback rate for the new number of days
+    fetchLoginRate(days); // Fetch login rate for the new number of days
+    fetchTimeTaken(); // Fetch time taken data
   }, [days]); // Dependency array includes days
 
   const handleDaysChange = (e) => {
@@ -82,6 +91,7 @@ function AdminDashboard() {
       fetchCounts(value); // Fetch new data based on the new number of days
       fetchFeedbackRate(value); // Fetch feedback rate for the new number of days
       fetchLoginRate(value); // Fetch login rate for the new number of days
+      fetchTimeTaken(); // Fetch time taken data
     }
   };
 
@@ -127,6 +137,21 @@ function AdminDashboard() {
     ],
   };
 
+  // Prepare data for the time taken chart
+  const timeTakenChartData = {
+    labels: Array.from({ length: timeTakenData.length }, (_, i) => `Feedback ${i + 1}`), // Label for each feedback
+    datasets: [
+      {
+        label: 'Time Taken (s)',
+        data: timeTakenData,
+        backgroundColor: ['rgba(54, 162, 235, 0.6)'],
+        borderColor: ['rgba(54, 162, 235, 1)'],
+        borderWidth: 2,
+        fill: false,
+      },
+    ],
+  };
+
   return (
     <div style={styles.container}>
       <AdminNavbar />
@@ -144,7 +169,7 @@ function AdminDashboard() {
         {warning && <div style={styles.warning}>{warning}</div>}
       </div>
       <div style={styles.chartContainer}>
-        <div style={styles.chart}>
+        <div style={{ ...styles.chart, marginRight: '10px' }}>
           <h3 style={styles.chartTitle}>Feedback Count (Last {days} Days)</h3>
           <Line data={feedbackChartData} options={{ responsive: true }} />
         </div>
@@ -163,6 +188,13 @@ function AdminDashboard() {
           <p>{loginRate.toFixed(2)} logins/day</p>
         </div>
       </div>
+      <div style={styles.chartContainer}>
+        <div style={{ ...styles.chart, width: '95%', margin: '20px auto', height: '300px', backgroundColor: 'transparent' }}>
+          <h3 style={styles.chartTitle}>Time Taken for Last 50 Feedbacks</h3>
+          <Line data={timeTakenChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+        </div>
+      </div>
+      <div style={{ height: '50px' }} />
     </div>
   );
 }
@@ -172,7 +204,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: '#f4f4f4',
+    backgroundColor: 'white',
     padding: '20px',
   },
   title: {
@@ -208,6 +240,7 @@ const styles = {
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
     padding: '20px',
+    marginBottom: '30px', // Add margin to create space between charts
   },
   chartTitle: {
     marginBottom: '10px',
