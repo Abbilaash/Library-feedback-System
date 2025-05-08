@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminNavbar from './AdminNavbar'; // Import the AdminNavbar
+import { useNavigate } from 'react-router-dom';
 
 function AdminSettings() {
   const [username, setUsername] = useState('');
@@ -10,11 +11,30 @@ function AdminSettings() {
   const [lastLogins, setLastLogins] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchLastLogins();
     checkSession(); // Fetch the session username
   }, []);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/admin/check_session');
+        if (!response.data.logged_in) {
+          navigate('/admin'); // Redirect to login if not logged in
+        }
+      } catch (error) {
+        navigate('/admin'); // Redirect to login on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
 
   const checkSession = async () => {
     try {
@@ -76,6 +96,10 @@ function AdminSettings() {
       setSuccess('');
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Optional loading state
+  }
 
   return (
     <div style={styles.container}>

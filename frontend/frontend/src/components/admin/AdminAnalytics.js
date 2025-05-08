@@ -3,8 +3,10 @@ import axios from 'axios';
 import AdminNavbar from './AdminNavbar'; // Import the AdminNavbar
 import { FaEllipsisV } from 'react-icons/fa'; // Import the dropdown icon
 import { Pie } from 'react-chartjs-2'; // Import Pie chart
+import { useNavigate } from 'react-router-dom';
 
 function AdminAnalytics() {
+  const navigate = useNavigate();
   const [issues, setIssues] = useState([]);
   const [issueCounts, setIssueCounts] = useState({ total: 0, resolved: 0, pending: 0 });
   const [categoryData, setCategoryData] = useState({}); // State for category data
@@ -14,6 +16,24 @@ function AdminAnalytics() {
   const [categoryFilter, setCategoryFilter] = useState(''); // State for category filter
   const [searchQuery, setSearchQuery] = useState(''); // State for search query
   const [categories, setCategories] = useState([]); // State for categories
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/admin/check_session');
+        if (!response.data.logged_in) {
+          navigate('/admin'); // Redirect to login if not logged in
+        }
+      } catch (error) {
+        navigate('/admin'); // Redirect to login on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -110,6 +130,10 @@ function AdminAnalytics() {
       },
     ],
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Optional loading state
+  }
 
   return (
     <div style={styles.container}>
