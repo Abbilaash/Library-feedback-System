@@ -1,5 +1,5 @@
 # library-feedback-system
-This project is an Alpha version of the Library Feedback System for GRD Memorial Library at PSG College Of Technology. The data used is the lending history of 21,155 transactions from 01-02-2025 to 01-04-2025.
+This project represents the alpha version of the Library Feedback System developed for the GRD Memorial Library at PSG College of Technology. It utilizes lending history data comprising 21,155 transactions recorded between February 1, 2025, and April 1, 2025.
 
 ## Tech Stack
 - Frontend: React.js, CSS
