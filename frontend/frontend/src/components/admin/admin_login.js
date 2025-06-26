@@ -46,7 +46,8 @@ function AdminLogin() {
       boxShadow: '0 0 10px rgba(0,0,0,0.1)',
       borderRadius: '8px'
     }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Admin Login</h2>
+      <h1 style={{ textAlign: 'center', marginBottom: '20px', color:"blue" }}>Dr.GRD Memorial Library</h1>
+      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Admin Portal</h2>
       
       {error && (
         <div style={{
@@ -107,12 +108,13 @@ function AdminLogin() {
           style={{
             width: '100%',
             padding: '10px',
-            backgroundColor: '#007bff',
+            backgroundColor: 'blue',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
             cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1
+            opacity: loading ? 0.7 : 1,
+            fontWeight:"bold"
           }}
         >
           {loading ? 'Logging in...' : 'Login'}

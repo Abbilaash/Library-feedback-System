@@ -2,14 +2,34 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminNavbar from './AdminNavbar'; // Import the AdminNavbar
 import { FaSearch, FaTrash, FaPrint } from 'react-icons/fa'; // Import icons
+import { useNavigate } from 'react-router-dom';
 
 function AdminFeedbackView() {
+  const navigate = useNavigate();
   const [feedbacks, setFeedbacks] = useState([]);
   const [filteredFeedbacks, setFilteredFeedbacks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('roll_no'); // Default filter type
   const [startDate, setStartDate] = useState(''); // State for start date
   const [endDate, setEndDate] = useState(''); // State for end date
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/admin/check_session');
+        if (!response.data.logged_in) {
+          navigate('/admin'); // Redirect to login if not logged in
+        }
+      } catch (error) {
+        navigate('/admin'); // Redirect to login on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchFeedbacks = async () => {
@@ -52,6 +72,10 @@ function AdminFeedbackView() {
   const handlePrint = () => {
     window.print(); // Simple print functionality
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Optional loading state
+  }
 
   return (
     <div style={styles.container}>

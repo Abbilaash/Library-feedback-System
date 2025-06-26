@@ -13,8 +13,10 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [feedbackData, setFeedbackData] = useState([]);
   const [loginData, setLoginData] = useState([]);
+  const [timeTakenData, setTimeTakenData] = useState([]); // New state for time taken data
   const [days, setDays] = useState(5); // Default to 5 days
-  const [feedbackRate, setFeedbackRate] = useState({});
+  const [feedbackRate, setFeedbackRate] = useState(0);
+  const [loginRate, setLoginRate] = useState(0);
   const [warning, setWarning] = useState('');
 
   useEffect(() => {
@@ -34,36 +36,6 @@ function AdminDashboard() {
     checkSession();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        const feedbackResponse = await axios.get(`http://localhost:5000/admin/feedback_count?days=${days}`);
-        const loginResponse = await axios.get(`http://localhost:5000/admin/login_count?days=${days}`);
-        setFeedbackData(Object.values(feedbackResponse.data));
-        setLoginData(Object.values(loginResponse.data));
-      } catch (err) {
-        console.error('Failed to fetch counts:', err);
-      }
-    };
-
-    if (days >= 5) { // Only fetch if days is valid
-      fetchCounts();
-    }
-  }, [days]); // Dependency array includes days
-
-  const handleDaysChange = (e) => {
-    const value = parseInt(e.target.value, 10);
-    setDays(value); // Update days regardless of the value
-    if (value < 5) {
-      setWarning('Please enter a number of days greater than or equal to 5.');
-    } else {
-      setWarning('');
-      // Fetch new data based on the new number of days
-      fetchCounts(value);
-      fetchFeedbackRate(value); // Fetch feedback rate for the new number of days
-    }
-  };
-
   const fetchCounts = async (days) => {
     try {
       const feedbackResponse = await axios.get(`http://localhost:5000/admin/feedback_count?days=${days}`);
@@ -78,9 +50,48 @@ function AdminDashboard() {
   const fetchFeedbackRate = async (days) => {
     try {
       const response = await axios.get(`http://localhost:5000/admin/feedback_rate/${days}`);
-      setFeedbackRate(response.data);
+      setFeedbackRate(response.data.rate);
     } catch (err) {
       console.error('Failed to fetch feedback rate:', err);
+    }
+  };
+
+  const fetchLoginRate = async (days) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/admin/login_rate/${days}`);
+      setLoginRate(response.data.rate);
+    } catch (err) {
+      console.error('Failed to fetch login rate:', err);
+    }
+  };
+
+  const fetchTimeTaken = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/admin/feedback_time_taken`);
+      setTimeTakenData(response.data);
+    } catch (err) {
+      console.error('Failed to fetch time taken data:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCounts(days);
+    fetchFeedbackRate(days); // Fetch feedback rate for the new number of days
+    fetchLoginRate(days); // Fetch login rate for the new number of days
+    fetchTimeTaken(); // Fetch time taken data
+  }, [days]); // Dependency array includes days
+
+  const handleDaysChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    setDays(value); // Update days regardless of the value
+    if (value < 5) {
+      setWarning('Please enter a number of days greater than or equal to 5.');
+    } else {
+      setWarning('');
+      fetchCounts(value); // Fetch new data based on the new number of days
+      fetchFeedbackRate(value); // Fetch feedback rate for the new number of days
+      fetchLoginRate(value); // Fetch login rate for the new number of days
+      fetchTimeTaken(); // Fetch time taken data
     }
   };
 
@@ -126,6 +137,21 @@ function AdminDashboard() {
     ],
   };
 
+  // Prepare data for the time taken chart
+  const timeTakenChartData = {
+    labels: Array.from({ length: timeTakenData.length }, (_, i) => `Feedback ${i + 1}`), // Label for each feedback
+    datasets: [
+      {
+        label: 'Time Taken (s)',
+        data: timeTakenData,
+        backgroundColor: ['rgba(54, 162, 235, 0.6)'],
+        borderColor: ['rgba(54, 162, 235, 1)'],
+        borderWidth: 2,
+        fill: false,
+      },
+    ],
+  };
+
   return (
     <div style={styles.container}>
       <AdminNavbar />
@@ -143,7 +169,7 @@ function AdminDashboard() {
         {warning && <div style={styles.warning}>{warning}</div>}
       </div>
       <div style={styles.chartContainer}>
-        <div style={styles.chart}>
+        <div style={{ ...styles.chart, marginRight: '10px' }}>
           <h3 style={styles.chartTitle}>Feedback Count (Last {days} Days)</h3>
           <Line data={feedbackChartData} options={{ responsive: true }} />
         </div>
@@ -152,14 +178,23 @@ function AdminDashboard() {
           <Line data={loginChartData} options={{ responsive: true }} />
         </div>
       </div>
-      <div style={styles.feedbackRateContainer}>
-        <h3 style={styles.chartTitle}>Feedback Rate (Last {days} Days)</h3>
-        <ul>
-          {Object.entries(feedbackRate).map(([date, count]) => (
-            <li key={date}>{date}: {count} feedbacks</li>
-          ))}
-        </ul>
+      <div style={styles.rateContainer}>
+        <div style={styles.rateCard}>
+          <h3 style={styles.chartTitle}>Feedback Rate</h3>
+          <p>{feedbackRate.toFixed(2)} feedbacks/day</p>
+        </div>
+        <div style={styles.rateCard}>
+          <h3 style={styles.chartTitle}>Login Rate</h3>
+          <p>{loginRate.toFixed(2)} logins/day</p>
+        </div>
       </div>
+      <div style={styles.chartContainer}>
+        <div style={{ ...styles.chart, width: '95%', margin: '20px auto', height: '300px', backgroundColor: 'transparent' }}>
+          <h3 style={styles.chartTitle}>Time Taken for Last 50 Feedbacks</h3>
+          <Line data={timeTakenChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+        </div>
+      </div>
+      <div style={{ height: '50px' }} />
     </div>
   );
 }
@@ -169,7 +204,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: '#f4f4f4',
+    backgroundColor: 'white',
     padding: '20px',
   },
   title: {
@@ -205,18 +240,30 @@ const styles = {
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
     padding: '20px',
+    marginBottom: '30px', // Add margin to create space between charts
   },
   chartTitle: {
     marginBottom: '10px',
     fontSize: '18px',
     fontWeight: 'bold',
   },
-  feedbackRateContainer: {
+  rateContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
     marginTop: '20px',
+  },
+  rateCard: {
+    flex: 1,
+    margin: '0 10px',
     backgroundColor: 'white',
     borderRadius: '8px',
     padding: '20px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    textAlign: 'center',
+    transition: 'transform 0.2s', // Add transition for the pop effect
+  },
+  rateCardHover: {
+    transform: 'scale(1.05)', // Scale up on hover
   },
 };
 

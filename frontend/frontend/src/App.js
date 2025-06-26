@@ -8,6 +8,7 @@
   import AdminSettings from './components/admin/AdminSettings';
   import AdminFeedbackView from './components/admin/AdminFeedbackView';
   import AdminAnalytics from './components/admin/AdminAnalytics';
+  import AdminReport from './components/admin/AdminReport';
   
   import UserLogin from './components/user/user_login';
   import LibraryFeedbackForm from './components/user/UserFeedback';
@@ -23,6 +24,7 @@
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/feedback_view" element={<AdminFeedbackView />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
+          <Route path="/admin/reports" element={<AdminReport />} />
 
           <Route path="/" element={<UserLogin />} />
           <Route path="/feedback_entry" element={<LibraryFeedbackForm />} />

@@ -4,6 +4,8 @@ import requests
 import datetime
 from flask_cors import CORS
 from bson import ObjectId
+import os
+import logging
 
 # importing database collections from app
 from database import users_collection
@@ -11,6 +13,7 @@ from database import user_logs_collection
 from database import feedback_collection
 from database import questions_collection
 from database import issues_collection
+from pipeline import issue_close_mail  # Import the email function
 
 # Flask Blueprint
 admin_bp = Blueprint("admin", __name__)
@@ -123,6 +126,28 @@ def login_count():
 # route to calculate and get feedback rate for past n days
 
 # route to calculate the floor wise feedback trend (as of now only floor 3)
+
+@admin_bp.route("/feedback_rate/<int:days>", methods=["GET"])
+def feedback_rate(days):
+    now = datetime.datetime.utcnow()
+    start_date = now - datetime.timedelta(days=days)
+
+    # Calculate feedback rate
+    total_feedback = feedback_collection.count_documents({"date": {"$gte": start_date}})
+    feedback_rate = total_feedback / days if days > 0 else 0
+
+    return jsonify({"rate": feedback_rate}), 200
+
+@admin_bp.route("/login_rate/<int:days>", methods=["GET"])
+def login_rate(days):
+    now = datetime.datetime.utcnow()
+    start_date = now - datetime.timedelta(days=days)
+
+    # Calculate login rate
+    total_logins = user_logs_collection.count_documents({"date": {"$gte": start_date}})
+    login_rate = total_logins / days if days > 0 else 0
+
+    return jsonify({"rate": login_rate}), 200
 
 
 
@@ -265,9 +290,8 @@ def get_feedback_submissions():
             "floor_no": feedback.get("floor_no"),
             "feedback_time_taken":feedback.get("feedback_time_taken"),
             "date": feedback.get("date"),
-            "issue_presence":feedback.get("issue_presence")
+            "issue_presence":str(feedback.get("issue_presence"))
         })
-    print(feedback_list)
 
     return jsonify(feedback_list), 200
 
@@ -310,7 +334,6 @@ def search_feedback():
 
     return jsonify(feedback_list), 200
 
-
 @admin_bp.route("/get_issues", methods=["GET"])
 def get_issues():
     issues = issues_collection.find({}, {
@@ -319,10 +342,9 @@ def get_issues():
         "issue_raise_date": 1,
         "status": 1,
         "resolved_date":1,
-        "issue":1
+        "issue":1,
+        "user_score":1
     })
-
-    print(issues)
     
     issue_list = []
     for issue in issues:
@@ -332,8 +354,10 @@ def get_issues():
             "issue":issue.get("issue"),
             "issue_raise_date": issue.get("issue_raise_date"),
             "status": issue.get("status"),
-            "resolved_date":issue.get("resolved_date")
+            "resolved_date":issue.get("resolved_date"),
+            "user_score":issue.get("user_score")*100
         })
+        print(issue)
 
     return jsonify(issue_list), 200
 
@@ -370,7 +394,115 @@ def get_issue_categories():
     category_data = {str(category["_id"]): category["count"] for category in category_counts}
     return jsonify(category_data), 200
 
+@admin_bp.route("/resolve_issue/<issue_id>", methods=["PUT"])
+def resolve_issue(issue_id):
+    # Fetch the issue to get the user's email
+    issue = issues_collection.find_one({"_id": ObjectId(issue_id)})
+    if not issue:
+        return jsonify({"error": "Issue not found."}), 404
 
+    user_email = issue.get("raised_by")  # Assuming the user's email is stored in the issue document
+    user_name = issue.get("raised_by")  # Assuming the name of the user is stored in the issue document
+
+    result = issues_collection.update_one(
+        {"_id": ObjectId(issue_id)},
+        {"$set": {"status": "RESOLVED","resolved_date": datetime.datetime.utcnow()}}
+    )
+    if result.modified_count == 0:
+        return jsonify({"error": "Issue not found or status not changed."}), 404
+
+    # Send email notification
+    issue_close_mail("RESOLVED", user_email, user_name)
+
+    return jsonify({"message": "Issue status updated to RESOLVED."}), 200
+
+@admin_bp.route("/suspend_issue/<issue_id>", methods=["PUT"])
+def suspend_issue(issue_id):
+    # Fetch the issue to get the user's email
+    issue = issues_collection.find_one({"_id": ObjectId(issue_id)})
+    if not issue:
+        return jsonify({"error": "Issue not found."}), 404
+
+    # Get the user's email from the issue document
+    user_email = issue.get("raised_by")  # Assuming the user's email is stored in the issue document
+    user_name = issue.get("raised_by")  # Assuming the name of the user is stored in the issue document
+
+    result = issues_collection.update_one(
+        {"_id": ObjectId(issue_id)},
+        {"$set": {"status": "SUSPENDED"}}
+    )
+    if result.modified_count == 0:
+        return jsonify({"error": "Issue not found or status not changed."}), 404
+
+    # Send email notification
+    issue_close_mail("SUSPENDED", user_email, user_name)
+
+    return jsonify({"message": "Issue status updated to SUSPENDED."}), 200
+
+@admin_bp.route("/set_pending_issue/<issue_id>", methods=["PUT"])
+def set_pending_issue(issue_id):
+    # Fetch the issue to get the user's email
+    issue = issues_collection.find_one({"_id": ObjectId(issue_id)})
+    if not issue:
+        return jsonify({"error": "Issue not found."}), 404
+
+    # Get the user's email from the issue document
+    user_email = issue.get("raised_by")  # Assuming the user's email is stored in the issue document
+    user_name = issue.get("raised_by")  # Assuming the name of the user is stored in the issue document
+
+    result = issues_collection.update_one(
+        {"_id": ObjectId(issue_id)},
+        {"$set": {"status": "PENDING"}}
+    )
+    if result.modified_count == 0:
+        return jsonify({"error": "Issue not found or status not changed."}), 404
+
+    # Send email notification
+    issue_close_mail("PENDING", user_email, user_name)
+
+    return jsonify({"message": "Issue status updated to PENDING."}), 200
+
+
+@admin_bp.route("/filter_issues", methods=["GET"])
+def filter_issues():
+    status = request.args.get("status")
+    category = request.args.get("category")
+    query = request.args.get("query", "")
+
+    filters = {}
+    if status:
+        filters["status"] = status
+    if category:
+        filters["category"] = category
+
+    if query:
+        filters["$or"] = [
+            {"raised_by": {"$regex": query, "$options": "i"}},
+            {"roll_no": {"$regex": query, "$options": "i"}}
+        ]
+
+    issues = issues_collection.find(filters)
+    issue_list = []
+    for issue in issues:
+        issue_list.append({
+            "_id": str(issue.get("_id")),
+            "raised_by": issue.get("raised_by"),
+            "issue": issue.get("issue"),
+            "issue_raise_date": issue.get("issue_raise_date"),
+            "status": issue.get("status"),
+            "resolved_date": issue.get("resolved_date"),
+            "category": issue.get("category")  # Assuming category is stored in the issue document
+        })
+
+    return jsonify(issue_list), 200
+
+@admin_bp.route("/feedback_time_taken", methods=["GET"])
+def feedback_time_taken():
+    # Fetch the last 20 feedback submissions
+    feedbacks = feedback_collection.find({}, {"feedback_time_taken": 1}).sort("date", -1).limit(50)
+    time_taken_list = [feedback.get("feedback_time_taken", 0) for feedback in feedbacks]
+    
+    return jsonify(time_taken_list), 200
 
 
 
